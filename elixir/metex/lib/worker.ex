@@ -2,6 +2,16 @@ defmodule Metex.Worker do
 
   @api_key "api_key"
 
+  def loop do
+    receive do
+      {sender_pid, location} ->
+        send(sender_pid, {:ok, temperature_of(location)})
+      _ ->
+        IO.puts "don't know how to process this message"
+    end
+    loop()
+  end
+
   def temperature_of(location) do
     result = url_of(location)
       |> HTTPoison.get
@@ -17,7 +27,7 @@ defmodule Metex.Worker do
 
   defp url_of(location) do
     location = URI.encode(location)
-    "http://api.openweathermap.org/data/2.5/weather?q+#{location}&appid=#{@api_key}"
+    "http://api.openweathermap.org/data/2.5/weather?q=#{location}&appid=#{@api_key}"
   end
 
   defp parse_response({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
@@ -38,10 +48,6 @@ defmodule Metex.Worker do
     rescue
       _ -> :error
     end
-  end
-
-  defp map(arg, foo) do
-    foo.(arg) 
   end
 
 end
